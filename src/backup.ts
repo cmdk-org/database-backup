@@ -1,6 +1,7 @@
 import { exec } from "child_process";
-import { PutObjectCommand, S3Client, S3ClientConfig } from "@aws-sdk/client-s3";
+import { PutObjectCommand, S3Client, S3ClientConfig, S3 } from "@aws-sdk/client-s3";
 import { createReadStream } from "fs";
+import { Upload } from "@aws-sdk/lib-storage";
 
 import { env } from "./env";
 
@@ -27,6 +28,35 @@ const uploadToS3 = async ({ name, path }: {name: string, path: string}) => {
       Body: createReadStream(path),
     })
   )
+
+  console.log("Backup uploaded to S3...");
+}
+const uploadBigFileToS3 = async ({ name, path }: {name: string, path: string}) => {
+  console.log("Uploading backup to S3...");
+
+  const bucket = env.AWS_S3_BUCKET;
+
+  const clientOptions: S3ClientConfig = {
+    region: env.AWS_S3_REGION,
+  }
+
+  if (env.AWS_S3_ENDPOINT) {
+    console.log(`Using custom endpoint: ${env.AWS_S3_ENDPOINT}`)
+    clientOptions['endpoint'] = env.AWS_S3_ENDPOINT;
+  }
+
+  const client = new S3Client(clientOptions);
+
+  const upload = new Upload({
+    client,
+    params: {
+      Bucket: bucket,
+      Key: name,
+      Body: createReadStream(path),
+    },
+  });
+
+  const result = await upload.done();
 
   console.log("Backup uploaded to S3...");
 }
@@ -59,7 +89,7 @@ export const backup = async () => {
   const filepath = `/tmp/${filename}`
 
   await dumpToFile(filepath)
-  await uploadToS3({name: filename, path: filepath})
-
+  // await uploadToS3({name: filename, path: filepath})
+  await uploadBigFileToS3({name: filename, path: filepath})
   console.log("DB backup complete...")
 }

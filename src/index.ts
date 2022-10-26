@@ -14,3 +14,4 @@ const job = new CronJob(env.BACKUP_CRON_SCHEDULE, async () => {
 job.start();
 
 console.log("Backup cron scheduled...")
+console.log("Next backup will run at: ", job.nextDate().toString())
